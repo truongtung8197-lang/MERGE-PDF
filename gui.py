@@ -472,8 +472,13 @@ class PDFMergerApp(ctk.CTk):
         self._log(f"Đã tìm thấy {len(pdf_paths)} file PDF.", "info")
 
         def worker():
+            # QUAN TRỌNG: log_callback được merge_pdfs() gọi từ worker thread (background),
+            # nên KHÔNG được đụng trực tiếp vào widget Tk/CTk ở đây (không thread-safe).
+            # Phải bọc qua self.after(0, ...) để việc update UI luôn chạy trên main thread.
             success, msg = merge_pdfs(
-                pdf_paths, output_path, log_callback=lambda m: self._log(m, "default")
+                pdf_paths,
+                output_path,
+                log_callback=lambda m: self.after(0, self._log, m, "default"),
             )
             self.after(0, self._merge_done, success, msg)
 
